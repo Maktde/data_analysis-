@@ -1,0 +1,153 @@
+#Primer_Punto == Simulación para calcular el número promedio de cordoncillos resistentes
+
+# Parámetros del problema
+set.seed(123)  # Fijamos semilla para reproducibilidad
+
+N_cordoncillo <- 200  # Número promedio de cordoncillos por transecto
+P_resistencia <- 0.18  # Probabilidad de resistencia
+P_oruga <- 0.65  # Probabilidad de presencia de oruga
+P_bosque_conservado <- 0.78  # Probabilidad de que el cordoncillo ocurra en bosque conservado
+P_area_conservada <- 0.20  # Proporción de bosque conservado en el área de estudio
+
+# Simulamos si cada cordoncillo está en un bosque conservado
+bosque_conservado <- rbinom(N_cordoncillo, 1, P_area_conservada)
+
+# Simulamos si cada sitio tiene orugas
+orugas_presentes <- rbinom(N_cordoncillo, 1, P_oruga)
+
+# Aplicamos reglas ecológicas:
+# Si hay orugas, solo los resistentes persisten; si no hay orugas, todos persisten
+cordoncillos_presentes <- ifelse(orugas_presentes == 1, 
+                                 rbinom(N_cordoncillo, 1, P_resistencia), 
+                                 1)
+
+# De los cordoncillos presentes, cuántos son resistentes
+cordoncillos_resistentes <- sum(cordoncillos_presentes * rbinom(N_cordoncillo, 1, P_resistencia))
+
+# Resultado
+cat("Cantidad esperada de cordoncillos resistentes en el transecto:", cordoncillos_resistentes, "\n")
+
+
+
+
+
+
+
+
+
+
+# Probabilidad de ataque por orugas
+# Parámetros del problema
+P_oruga <- 0.65  # Probabilidad de que haya orugas en un sitio
+P_bosque_conservado <- 0.78  # Probabilidad de cordoncillos en bosque conservado
+P_area_conservada <- 0.20  # Proporción del área que es bosque conservado
+N_muestreos <- 20  # Número de eventos de muestreo por transecto
+
+# Probabilidad de un ataque en un evento de muestreo
+P_ataque_evento <- P_oruga * P_area_conservada * P_bosque_conservado
+
+# Probabilidad de al menos un ataque en los 20 eventos
+P_al_menos_un_ataque <- 1 - (1 - P_ataque_evento)^N_muestreos
+
+# Resultado
+cat("Probabilidad de que ocurra al menos un ataque por orugas en un transecto:", P_al_menos_un_ataque, "\n")
+
+
+
+
+
+
+
+# Probabilidad de muestrear en bosque conservado
+
+# Parámetros
+P_bosque_conservado <- 0.20  # Proporción de área que es bosque conservado
+P_cordoncillo_en_conservado <- 0.78  # Probabilidad de que el cordoncillo ocurra en bosque conservado
+N_cordoncillo <- 200  # Número total de cordoncillos en el transecto
+
+# Probabilidad de que un cordoncillo muestreado esté en un bosque conservado
+P_muestreo_bosque_conservado <- P_bosque_conservado * P_cordoncillo_en_conservado
+
+# Número esperado de cordoncillos en bosque conservado
+N_esperado_bosque_conservado <- N_cordoncillo * P_muestreo_bosque_conservado
+
+# Resultados
+cat("Probabilidad de muestrear un bosque conservado considerando la presencia del cordoncillo:", P_muestreo_bosque_conservado, "\n")
+cat("Número esperado de cordoncillos en bosque conservado:", N_esperado_bosque_conservado, "\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Densidades medias
+# Parámetros
+N_cordoncillo <- 200
+P_bosque_conservado <- 0.20
+P_bosque_degradado <- 1 - P_bosque_conservado
+P_cordoncillo_conservado <- 0.78
+P_cordoncillo_degradado <- 1 - P_cordoncillo_conservado
+P_resistencia <- 0.18
+
+# Número esperado de cordoncillos en cada bosque
+N_C <- N_cordoncillo * P_bosque_conservado * P_cordoncillo_conservado
+N_D <- N_cordoncillo * P_bosque_degradado * P_cordoncillo_degradado
+
+# Número esperado de resistentes y no resistentes
+N_C_R <- N_C * P_resistencia
+N_C_NR <- N_C * (1 - P_resistencia)
+N_D_R <- N_D * P_resistencia
+N_D_NR <- N_D * (1 - P_resistencia)
+
+# Densidades medias en cada tipo de bosque
+D_C_R <- N_C_R / P_bosque_conservado
+D_C_NR <- N_C_NR / P_bosque_conservado
+D_D_R <- N_D_R / P_bosque_degradado
+D_D_NR <- N_D_NR / P_bosque_degradado
+
+# Resultados
+cat("Densidad media de cordoncillos resistentes en bosque conservado:", D_C_R, "\n")
+cat("Densidad media de cordoncillos no resistentes en bosque conservado:", D_C_NR, "\n")
+cat("Densidad media de cordoncillos resistentes en bosque degradado:", D_D_R, "\n")
+cat("Densidad media de cordoncillos no resistentes en bosque degradado:", D_D_NR, "\n")
+
+
+
+
+
+
+
+
+
+
+
+
+# Simulación para transectos de 2 km
+n_simulaciones <- 1000
+resistente_2km <- rbinom(n_simulaciones, size = 400, prob = 0.18)
+promedio_resistentes_2km <- mean(resistente_2km)
+print(paste("Promedio de cordoncillos resistentes en 2 km:", promedio_resistentes_2km))
+
+
+
+
+
+
+
+
+
+# Simulación para diferentes números de transectos
+n_transectos <- c(5, 10, 20, 50, 100)
+resultados <- data.frame(Transectos = n_transectos, Promedio_Resistentes = NA)
+for (i in 1:length(n_transectos)) {
+  simulaciones <- rbinom(n_transectos[i], size = 200, prob = 0.18)
+  resultados$Promedio_Resistentes[i] <- mean(simulaciones)
+}
+print(resultados)

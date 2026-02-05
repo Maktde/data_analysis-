@@ -1,0 +1,120 @@
+# Cargar la base de datos en R
+datos <- read.table("C:/Users/User/Desktop/datos_iniciales.csv", header = TRUE, sep = ",")  
+
+# Instalar paquetes necesarios 
+if (!require("vegan")) install.packages("vegan", dependencies = TRUE)
+if (!require("ggplot2")) install.packages("ggplot2", dependencies = TRUE)
+
+# Cargar librerías
+library(vegan)
+library(ggplot2)
+
+# Verificamos la estructura de los datos
+head(datos)
+
+# Contar la abundancia de cada especie (si sp es la columna correcta)
+abundancias <- table(datos$sp)  
+
+# Verificar si la tabla de abundancias no está vacía
+if (length(abundancias) == 0) {
+  stop("Error: La tabla de abundancias está vacía. Verifica la columna de especies en los datos.")
+}
+
+# Definir los tamaños de muestra para rarefacción (evitar valores mayores a la población total)
+tamanos_muestra <- seq(10, min(10000, sum(abundancias)), by = 50)  
+
+# Calcular la curva de rarefacción
+curva_rarefaccion <- rarefy(abundancias, tamanos_muestra)
+
+# Verificar que se generó correctamente
+if (is.null(curva_rarefaccion)) {
+  stop("Error: No se pudo calcular la curva de rarefacción.")
+}
+
+# Calcular la variabilidad (errores estándar)
+error_std <- tryCatch({
+  rareslope(abundancias, tamanos_muestra)
+}, error = function(e) {
+  warning("No se pudo calcular el error estándar de rarefacción. Se usará NA.")
+  rep(NA, length(tamanos_muestra))
+})
+
+# Crear un dataframe con los resultados
+df_rarefaccion <- data.frame(
+  Muestra = tamanos_muestra,
+  Riqueza = as.numeric(curva_rarefaccion),  # Asegurar formato numérico
+  ErrorStd = as.numeric(error_std)
+)
+
+# Verificar que el dataframe se creó correctamente
+head(df_rarefaccion)
+
+# 📊 Graficar la curva de rarefacción con ggplot2
+ggplot(df_rarefaccion, aes(x = Muestra, y = Riqueza)) +
+  geom_line(color = "blue", size = 1) +  # Línea principal
+  geom_ribbon(aes(ymin = Riqueza - ErrorStd, ymax = Riqueza + ErrorStd), 
+              fill = "lightblue", alpha = 0.5) +  # Sombra para la variabilidad
+  labs(title = "Curva de Rarefacción",
+       x = "Número de Individuos Muestreados",
+       y = "Número Esperado de Especies") +
+  theme_minimal()
+
+# Guardar la gráfica
+ggsave("curva_rarefaccion.png", width = 7, height = 5, dpi = 300)
+
+
+
+
+
+
+
+
+# Haciendo bootstraping:
+
+# Cargar la base de datos en R
+datos <- read.table("C:/Users/User/Desktop/datos_iniciales.csv", header=TRUE)  
+
+# Cargar paquetes necesarios
+library(vegan)
+library(ggplot2)
+
+# Contar la abundancia de cada especie
+abundancias <- table(datos$sp)  
+
+# Definir los tamaños de muestra (de 10 a 10,000 en pasos de 50)
+tamanos_muestra <- seq(10, 10000, by = 50)  
+
+# Número de repeticiones para el bootstrapping
+num_repeticiones <- 100  
+
+# Función para hacer bootstrapping
+bootstrapping_rarefaccion <- function(n) {
+  especies_estimadas <- numeric(num_repeticiones)
+  
+  for (i in 1:num_repeticiones) {
+    muestra <- sample(names(abundancias), size = n, replace = TRUE, prob = abundancias)
+    especies_estimadas[i] <- length(unique(muestra))  # Contar especies únicas en la muestra
+  }
+  
+  return(c(media = mean(especies_estimadas), sd = sd(especies_estimadas)))  # Media y desviación estándar
+}
+
+# Aplicar bootstrapping a cada tamaño de muestra
+resultados_boot <- t(sapply(tamanos_muestra, bootstrapping_rarefaccion))
+colnames(resultados_boot) <- c("media", "sd")
+
+# Convertir resultados a data frame para ggplot2
+df_boot <- data.frame(TamanoMuestra = tamanos_muestra, 
+                      RiquezaMedia = resultados_boot[, "media"], 
+                      DesviacionStd = resultados_boot[, "sd"])
+
+# Graficar la curva de rarefacción con barras de error
+ggplot(df_boot, aes(x = TamanoMuestra, y = RiquezaMedia)) +
+  geom_line(color = "blue") +
+  geom_ribbon(aes(ymin = RiquezaMedia - DesviacionStd, ymax = RiquezaMedia + DesviacionStd), 
+              alpha = 0.2, fill = "blue") +
+  labs(title = "Curva de Rarefacción con Bootstrapping",
+       x = "Número de Individuos Muestreados",
+       y = "Número Esperado de Especies") +
+  theme_minimal()
+

@@ -1,0 +1,71 @@
+# Cargar paquetes
+library(vegan)
+library(ggplot2)
+
+# Cargar datos
+datos <- read.table("C:/Users/User/Desktop/datos_iniciales.csv")  # Cambia la ruta
+
+# Obtener la abundancia de especies
+abundancias <- table(datos$V2)
+
+# Definir tamaños de muestra y número de réplicas
+tamanos_muestra <- c(100, 1000, 10000)
+n_replicas <- 100
+
+# Función para realizar bootstrapping
+bootstrapping <- function(n, abundancias) {
+  especies_observadas <- numeric(n_replicas)
+  for (i in 1:n_replicas) {
+    muestra <- sample(names(abundancias), size = n, replace = TRUE, prob = abundancias / sum(abundancias))
+    especies_observadas[i] <- length(unique(muestra))
+  }
+  return(especies_observadas)
+}
+
+# Función para generar datos desde una distribución multinomial
+multinomial_sampling <- function(n, abundancias) {
+  especies_observadas <- numeric(n_replicas)
+  for (i in 1:n_replicas) {
+    muestra <- rmultinom(1, size = n, prob = abundancias / sum(abundancias))
+    especies_observadas[i] <- sum(muestra > 0)  # Número de especies observadas
+  }
+  return(especies_observadas)
+}
+
+# Inicializar listas para almacenar resultados
+resultados_boot <- list()
+resultados_multinom <- list()
+p_values <- numeric(length(tamanos_muestra))
+
+# Realizar comparación para cada tamaño de muestra
+for (i in 1:length(tamanos_muestra)) {
+  n <- tamanos_muestra[i]
+  
+  # Obtener datos de ambos métodos
+  boot_data <- bootstrapping(n, abundancias)
+  multinom_data <- multinomial_sampling(n, abundancias)
+  
+  # Almacenar resultados
+  resultados_boot[[as.character(n)]] <- boot_data
+  resultados_multinom[[as.character(n)]] <- multinom_data
+  
+  # Prueba t para comparar medias
+  t_test <- t.test(boot_data, multinom_data)
+  p_values[i] <- t_test$p.value
+  
+  # Imprimir resultados
+  cat("\nTamaño de muestra:", n)
+  cat("\n  Media Bootstrapping:", mean(boot_data), "±", sd(boot_data))
+  cat("\n  Media Multinomial:", mean(multinom_data), "±", sd(multinom_data))
+  cat("\n  p-value:", t_test$p.value, "\n")
+}
+
+# Interpretar resultados
+for (i in 1:length(tamanos_muestra)) {
+  n <- tamanos_muestra[i]
+  if (p_values[i] < 0.05) {
+    cat("\nPara n =", n, "los métodos son significativamente diferentes (p =", p_values[i], ")")
+  } else {
+    cat("\nPara n =", n, "NO hay diferencia significativa entre los métodos (p =", p_values[i], ")")
+  }
+}
